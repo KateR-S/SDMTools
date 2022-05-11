@@ -1,22 +1,22 @@
 /*
 this is code to calculate patch-based landscape statistics
 */
-#include <R.h> 
+#include <R.h>
 #include <Rinternals.h>
 
 //global variables
 int nrow, ncol;
-int *data; 
+int *data;
 SEXP ans;
 
-/* 
+/*
 tdata is a matrix of data with patches uniquely numbered
 IDs are the unique patch id values
 AREAS is the area of the cell in geographic coordinate systems
 TOPS, BOTTOMS AND SIDES	are the lengths of cell perimeters in geographic coordinate systems
 */
 //this is specific to projected coordinate systmes
-SEXP projectedPS(SEXP tdata, SEXP IDs) 
+SEXP projectedPS(SEXP tdata, SEXP IDs)
 	{
 	//define the pointers for the data
 	PROTECT(tdata = coerceVector(tdata, INTSXP));
@@ -27,30 +27,30 @@ SEXP projectedPS(SEXP tdata, SEXP IDs)
 	PROTECT(IDs = coerceVector(IDs, INTSXP));
 	int *ID = INTEGER(IDs); //this is the unique IDs of the patches
 	int npatch = length(IDs);
-	
+
 	//setup temporary outputs
 	SEXP ncells, ncellscore, nperimeters, ninternals;
 	PROTECT(ncells = allocVector(INTSXP, npatch)); int *ncell = INTEGER(ncells); //number of cells per patch
-	PROTECT(ncellscore = allocVector(INTSXP, npatch)); int *ncellcore = INTEGER(ncellscore); //number of core cells (core in 8 directions)	
+	PROTECT(ncellscore = allocVector(INTSXP, npatch)); int *ncellcore = INTEGER(ncellscore); //number of core cells (core in 8 directions)
 	PROTECT(nperimeters = allocVector(INTSXP, npatch)); int *nperim = INTEGER(nperimeters); //number of edges on teh perimeter
 	PROTECT(ninternals = allocVector(INTSXP, npatch)); int *nintern = INTEGER(ninternals);  // number of same patch shared edges
 
 	//int ncell[npatch], ncellcore[npatch], nperim[npatch], nintern[npatch];
 	//set everything to 0
-	int ii,row,col; 
+	int ii,row,col;
 	for (ii=0;ii<npatch;ii++) ncell[ii] = nperim[ii] = nintern[ii] = ncellcore[ii] = 0;
-	
+
 	//work with the data
 	//get the area and associated metrics
 	int np,ni,core; //temporary values representing nperim, nintern
-	int tval, rook[4], queen[4]; //values of the 9 cells of interest 
+	int tval, rook[4], queen[4]; //values of the 9 cells of interest
 	/*
 	queen[3],rook[0],queen[0]
 	rook[3],tval,rook[1]
 	queen[2],rook[2],queen[1]
 	*/
 	for (row=0; row<nrow; row++)	{
-		for (col=0; col<ncol; col++)	{	
+		for (col=0; col<ncol; col++)	{
 			tval = data[row+nrow*col];
 			if (tval!=NA_INTEGER)	{
 				np = ni = 0;
@@ -76,7 +76,7 @@ SEXP projectedPS(SEXP tdata, SEXP IDs)
 						if (core==0) ncellcore[ii] ++;
 						break;
 					}
-				}				
+				}
 			}
 		}
 	}
@@ -92,11 +92,11 @@ SEXP projectedPS(SEXP tdata, SEXP IDs)
 
 	//return the output data
 	UNPROTECT(7);
-    return(ans); 
+    return(ans);
 }
 
 //this is specific to geographic coordinate systems
-SEXP geographicPS(SEXP tdata, SEXP IDs, SEXP AREAS, SEXP TOPS, SEXP BOTTOMS, SEXP SIDES) 
+SEXP geographicPS(SEXP tdata, SEXP IDs, SEXP AREAS, SEXP TOPS, SEXP BOTTOMS, SEXP SIDES)
 	{
 	//define the pointers for the data
 	PROTECT(tdata = coerceVector(tdata, INTSXP));
@@ -112,24 +112,24 @@ SEXP geographicPS(SEXP tdata, SEXP IDs, SEXP AREAS, SEXP TOPS, SEXP BOTTOMS, SEX
 	PROTECT(TOPS = coerceVector(TOPS, REALSXP)); double *tops = REAL(TOPS); //get a pointer to the length of the top of the cells
 	PROTECT(BOTTOMS = coerceVector(BOTTOMS, REALSXP)); double *bottoms = REAL(BOTTOMS); //get a pointer to the length of the bottom of the cells
 	PROTECT(SIDES = coerceVector(SIDES, REALSXP)); double *sides = REAL(SIDES); //get a pointer to the length of the sides of the cells
-		
+
 	//setup temporary outputs
 	SEXP ncells, ncellscore, nperimeters, ninternals, outareas, outareascore, outperimeters;
 	PROTECT(ncells = allocVector(REALSXP, npatch)); double *ncell = REAL(ncells); //number of cells per patch
-	PROTECT(ncellscore = allocVector(REALSXP, npatch)); double *ncellcore = REAL(ncellscore); //number of core cells (core in 8 directions)	
+	PROTECT(ncellscore = allocVector(REALSXP, npatch)); double *ncellcore = REAL(ncellscore); //number of core cells (core in 8 directions)
 	PROTECT(nperimeters = allocVector(REALSXP, npatch)); double *nperim = REAL(nperimeters); //number of edges on teh perimeter
 	PROTECT(ninternals = allocVector(REALSXP, npatch)); double *nintern = REAL(ninternals);  // number of same patch shared edges
 	PROTECT(outareas = allocVector(REALSXP, npatch)); double *outarea = REAL(outareas); //areas per patch
-	PROTECT(outareascore = allocVector(REALSXP, npatch)); double *outareacore = REAL(outareascore); //core area cells (core in 8 directions)	
+	PROTECT(outareascore = allocVector(REALSXP, npatch)); double *outareacore = REAL(outareascore); //core area cells (core in 8 directions)
 	PROTECT(outperimeters = allocVector(REALSXP, npatch)); double *outperim = REAL(outperimeters); //length of perimeter
 	//set everything to 0
-	int ii,row,col; 
+	int ii,row,col;
 	for (ii=0;ii<npatch;ii++) { ncell[ii] = nperim[ii] = nintern[ii] = ncellcore[ii] = outarea[ii] = outareacore[ii] = outperim[ii] = 0.0; }
-	
+
 	//work with the data
 	//get the area and associated metrics
 	double np,ni,core,perim; //temporary values representing nperim, nintern
-	int tval, rook[4], queen[4]; //values of the 9 cells of interest 
+	int tval, rook[4], queen[4]; //values of the 9 cells of interest
 	/*
 	queen[3],rook[0],queen[0]
 	rook[3],tval,rook[1]
@@ -165,7 +165,7 @@ SEXP geographicPS(SEXP tdata, SEXP IDs, SEXP AREAS, SEXP TOPS, SEXP BOTTOMS, SEX
 						if (core==0) { ncellcore[ii] ++; outareacore[ii]+=areas[col]; }
 						break;
 					}
-				}				
+				}
 			}
 		}
 	}
@@ -184,6 +184,5 @@ SEXP geographicPS(SEXP tdata, SEXP IDs, SEXP AREAS, SEXP TOPS, SEXP BOTTOMS, SEX
 
 	//return the output data
 	UNPROTECT(14);
-    return(ans); 
+    return(ans);
 }
-
